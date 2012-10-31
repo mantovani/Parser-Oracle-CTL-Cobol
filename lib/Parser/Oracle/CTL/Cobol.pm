@@ -4,12 +4,10 @@ use 5.10.0;
 use strict;
 use warnings;
 
-BEGIN {
-    our $VERSION = '0.01';
-    use Exporter;
-    our @ISA    = qw(Exporter);
-    our @EXPORT = qw/parser/;
-}
+our $VERSION = '0.02';
+use Exporter;
+our @ISA    = qw(Exporter);
+our @EXPORT = qw/parser/;
 
 sub parser ($) {
     my $ctl = shift;
@@ -38,6 +36,56 @@ sub parser ($) {
 }
 
 sub parser_coluns {
+    my $coluns = clean_columns(shift);
+
+    my $struct = {};
+    my @items = split /,/s, $coluns;
+    foreach my $item (@items) {
+        if ( $item =~ /([\w\d_]+)\s+position\s*?\(([\s\w\d:]+)\)\s*+(.*+),*+/i )
+        {
+            my ( $column, $position, $rule ) = ( uc $1, uc _clean($2), $3 );
+            $rule =~ s/,$//;
+            $rule =~ s/#/,/g;
+            $struct->{$column} = {
+                position => $position,
+                rule     => $rule
+            };
+        }
+        else { die "unable to filter\n{$item}" }
+    }
+    return $struct;
+}
+
+sub clean_columns {
+    my $string = shift;
+    my @chars = split //, $string;
+    foreach my $delimit ( ( [ q{'}, q{'} ], [ q{"}, q{"} ], [ q{(}, q{)} ] ) ) {
+        my $match = 0;
+        for ( my $i = 0 ; $i <= $#chars ; $i++ ) {
+            if ( $chars[$i] eq $delimit->[0] ) {
+                $match++;
+                next;
+            }
+            if ( $match == 1 ) {
+                $chars[$i] = '#' if ord $chars[$i] == 44;
+            }
+            $match-- if $chars[$i] eq $delimit->[1];
+        }
+    }
+    local $" = "";
+    return "@chars";
+}
+
+sub _clean {
+    my $s = shift;
+    $s =~ s/\s+//g;
+    return $s;
+}
+
+42;    # End of Parser::Oracle::CTL
+
+__END__
+sub parser_coluns {
     my $coluns = shift;
     $coluns =~ s/([\("'].*?),(.*?[\)"'])/$1#$2/g;
     my $struct = {};
@@ -55,15 +103,6 @@ sub parser_coluns {
     return $struct;
 }
 
-sub _clean {
-    my $s = shift;
-    $s =~ s/\s+//g;
-    return $s;
-}
-
-42;    # End of Parser::Oracle::CTL
-
-__END__
 =head1 NAME
 
 Parser::Oracle::CTL - Parser for Oracle SQL Loader CTL for Cobol!
