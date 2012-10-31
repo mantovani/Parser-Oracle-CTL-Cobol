@@ -16,7 +16,7 @@ sub parser ($) {
 
     die "argumento is null" unless $ctl;
 
-    my $all_struct = {};
+    my $struct = {};
 
     $ctl =~ s/[\r\n]+/\n/g;
     if ( $ctl =~
@@ -24,17 +24,17 @@ sub parser ($) {
       )
     {
         my ( $rule, $table, $coluns ) = ( uc $1, uc $2, uc $3 );
-        $all_struct->{rule} = $rule;
+        $struct->{rule} = $rule;
         if ( $table =~ /(.+)\.(.+)/ ) {
-            $all_struct->{table} = $2;
-            $all_struct->{owner} = $1;
+            $struct->{table} = $2;
+            $struct->{owner} = $1;
         }
         else {
-            $all_struct->{table}   = $table;
-            $all_struct->{columns} = parser_coluns($coluns);
+            $struct->{table}   = $table;
+            $struct->{columns} = parser_coluns($coluns);
         }
     }
-    return $all_struct;
+    return $struct;
 }
 
 sub parser_coluns {
