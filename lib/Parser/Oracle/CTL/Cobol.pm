@@ -30,22 +30,23 @@ sub parser ($) {
             $struct->{owner} = $1;
         }
         else {
-            $struct->{table}   = $table;
-            $struct->{columns} = parser_coluns($coluns);
+            $struct->{table} = $table;
         }
+        $struct->{columns} = parser_coluns($coluns);
     }
     return $struct;
 }
 
 sub parser_coluns {
     my $coluns = shift;
-    $coluns =~ s/\((.*?),(.*?)\)/$1#$2/g;
+    $coluns =~ s/([\("'].*?),(.*?[\)"'])/$1#$2/g;
     my $struct = {};
     while (
         $coluns =~ s/([\w\d_]+)\s+position\s*?\(([\s\w\d:]+)\)\s*+(.*+),*+//i )
     {
         my ( $column, $position, $rule ) = ( uc $1, uc _clean($2), $3 );
         $rule =~ s/,$//;
+        $rule =~ s/#/,/g;
         $struct->{$column} = {
             position => $position,
             rule     => $rule
@@ -105,55 +106,6 @@ give a hashref with parser structure, receive a string parameter.
 
 Daniel de Oliveira Mantovani, C<< <daniel.oliveira.mantovani at gmail.com> >>
 
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-parser-oracle-ctl at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Parser-Oracle-CTL>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc Parser::Oracle::CTL
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker (report bugs here)
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Parser-Oracle-CTL>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Parser-Oracle-CTL>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Parser-Oracle-CTL>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Parser-Oracle-CTL/>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
-
 =head1 LICENSE AND COPYRIGHT
 
 Copyright 2012 Daniel de Oliveira Mantovani.
-
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
-
-See http://dev.perl.org/licenses/ for more information.
-
-
-## Please see file perltidy.ERR
