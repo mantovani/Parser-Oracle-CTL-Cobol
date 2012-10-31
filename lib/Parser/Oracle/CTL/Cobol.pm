@@ -72,8 +72,7 @@ sub clean_columns {
             $match-- if $chars[$i] eq $delimit->[1];
         }
     }
-    local $" = "";
-    return "@chars";
+    return join "", @chars;
 }
 
 sub _clean {
