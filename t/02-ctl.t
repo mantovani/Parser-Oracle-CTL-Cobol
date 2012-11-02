@@ -28,16 +28,16 @@ foreach my $column (@columns) {
 
 is(
     $struct->{columns}->{VLCNTOINT}->{rule},
-    q{"REPLACE(:VLCNTOINT , ',' , '.')"    },
+    q{"REPLACE(:VLCNTOINT , ',' , '.')"},
     'Rule VLCNTOINT'
 );
 
 is( $struct->{columns}->{INCNTAGRP}->{rule}, '', 'Rule INCNTAGRP' );
 is( $struct->{columns}->{INCMSSIT}->{rule},
-    'NULLIF(028:029)=BLANKS              ', 'Rule INCMSSIT' );
+    'NULLIF(028:029)=BLANKS', 'Rule INCMSSIT' );
 is(
     $struct->{columns}->{VLCNTOEXT}->{rule},
-    q{"REPLACE(:VLCNTOEXT , ',' , '.')"    },
+    q{"REPLACE(:VLCNTOEXT , ',' , '.')"},
     'Rule VLCNTOEXT'
 );
 is( $struct->{columns}->{CDAGNCONS}->{rule},

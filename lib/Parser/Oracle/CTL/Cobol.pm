@@ -4,7 +4,7 @@ use 5.10.0;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 use Exporter;
 our @ISA    = qw(Exporter);
 our @EXPORT = qw/parser/;
@@ -21,7 +21,7 @@ sub parser ($) {
 /(INSERT|REPLACE|APPEND|TRUNCATE).*?INTO\s+TABLE\s+([\d\w_\.]+).*?\((.+)\)/si
       )
     {
-        my ( $rule, $table, $coluns ) = ( uc $1, uc $2, uc $3 );
+        my ( $rule, $table, $columns ) = ( uc $1, uc $2, uc $3 );
         $struct->{rule} = $rule;
         if ( $table =~ /(.+)\.(.+)/ ) {
             $struct->{table} = $2;
@@ -30,21 +30,22 @@ sub parser ($) {
         else {
             $struct->{table} = $table;
         }
-        $struct->{columns} = parser_coluns($coluns);
+        $struct->{columns} = parser_columns($columns);
     }
     return $struct;
 }
 
-sub parser_coluns {
-    my $coluns = clean_columns(shift);
+sub parser_columns {
+    my $columns = clean_columns(shift);
 
     my $struct = {};
-    my @items = split /,/s, $coluns;
+    my @items = split /,/s, $columns;
     foreach my $item (@items) {
         if ( $item =~ /([\w\d_]+)\s+position\s*?\(([\s\w\d:]+)\)\s*+(.*+),*+/i )
         {
             my ( $column, $position, $rule ) = ( uc $1, uc _clean($2), $3 );
             $rule =~ s/,$//;
+			$rule =~ s/\s+$//;
             $rule =~ s/#/,/g;
             $struct->{$column} = {
                 position => $position,
@@ -84,23 +85,6 @@ sub _clean {
 42;    # End of Parser::Oracle::CTL
 
 __END__
-sub parser_coluns {
-    my $coluns = shift;
-    $coluns =~ s/([\("'].*?),(.*?[\)"'])/$1#$2/g;
-    my $struct = {};
-    while (
-        $coluns =~ s/([\w\d_]+)\s+position\s*?\(([\s\w\d:]+)\)\s*+(.*+),*+//i )
-    {
-        my ( $column, $position, $rule ) = ( uc $1, uc _clean($2), $3 );
-        $rule =~ s/,$//;
-        $rule =~ s/#/,/g;
-        $struct->{$column} = {
-            position => $position,
-            rule     => $rule
-        };
-    }
-    return $struct;
-}
 
 =head1 NAME
 
