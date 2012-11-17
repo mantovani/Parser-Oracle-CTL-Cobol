@@ -28,7 +28,7 @@ foreach my $column (@columns) {
 
 is(
     $struct->{columns}->{VLCNTOINT}->{rule},
-    q{"REPLACE(:VLCNTOINT , ',' , '.')"},
+    q{REPLACE(:VLCNTOINT , ',' , '.')},
     'Rule VLCNTOINT'
 );
 
@@ -37,11 +37,11 @@ is( $struct->{columns}->{INCMSSIT}->{rule},
     'NULLIF(028:029)=BLANKS', 'Rule INCMSSIT' );
 is(
     $struct->{columns}->{VLCNTOEXT}->{rule},
-    q{"REPLACE(:VLCNTOEXT , ',' , '.')"},
+    q{REPLACE(:VLCNTOEXT , ',' , '.')},
     'Rule VLCNTOEXT'
 );
 is( $struct->{columns}->{CDAGNCONS}->{rule},
-    '"TO_NUMBER(:CDAGNCONS, 999999999   )"', 'CDAGNCONS' );
+    'TO_NUMBER(:CDAGNCONS, 999999999   )', 'CDAGNCONS' );
 
 # - Position
 

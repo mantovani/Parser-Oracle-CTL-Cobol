@@ -17,8 +17,9 @@ sub parser ($) {
     my $struct = {};
 
     $ctl =~ s/[\r\n]+/\n/g;
+    $ctl =~ s/^\-\-.+//g;
     if ( $ctl =~
-/(INSERT|REPLACE|APPEND|TRUNCATE).*?INTO\s+TABLE\s+([\d\w_\.]+).*?\((.+)\)/si
+/(INSERT|REPLACE|APPEND|TRUNCATE).*?INTO\s+TABLE\s+"?([\d\w_\.]+)"?.*?\((.+)\)/si
       )
     {
         my ( $rule, $table, $columns ) = ( uc $1, uc $2, uc $3 );
@@ -29,10 +30,39 @@ sub parser ($) {
         }
         else {
             $struct->{table} = $table;
+            $struct->{owner} = 'NULL';
         }
         $struct->{columns} = parser_columns($columns);
+        return $struct;
     }
-    return $struct;
+    elsif ( $ctl =~
+/(INSERT|REPLACE|APPEND|TRUNCATE).*?INTO\s+([\w\d]+)\.TABLE\s+"?([\d\w_\.]+)"?.*?\((.+)\)/si
+      )
+    {
+        my ( $rule, $owner, $table, $columns ) = ( uc $1, uc $2, uc $3, uc $4 );
+        $struct->{rule}    = $rule;
+        $struct->{table}   = $table;
+        $struct->{owner}   = $owner;
+        $struct->{columns} = parser_columns($columns);
+        return $struct;
+    }
+    elsif ( $ctl =~ /INTO\s+TABLE\s+([\d\w_\.]+).*?\((.+)\)/si ) {
+        my ( $rule, $table, $columns ) = ( 'INSERT', uc $1, uc $2 );
+        $struct->{rule} = $rule;
+        if ( $table =~ /(.+)\.(.+)/ ) {
+            $struct->{table} = $2;
+            $struct->{owner} = $1;
+        }
+        else {
+            $struct->{table} = $table;
+            $struct->{owner} = 'NULL';
+        }
+        $struct->{columns} = parser_columns($columns);
+        return $struct;
+    }
+    else {
+        die "{$ctl}";
+    }
 }
 
 sub parser_columns {
@@ -41,18 +71,50 @@ sub parser_columns {
     my $struct = {};
     my @items = split /,/s, $columns;
     foreach my $item (@items) {
-        if ( $item =~ /([\w\d_]+)\s+position\s*?\(([\s\w\d:]+)\)\s*+(.*+),*+/i )
-        {
+        next unless $item =~ /\w+/;
+        if ( $item =~ /([\w\d_]+)\s+position\s*?\(([\s\w\d:]+)\)\s*+(.*+)/i ) {
             my ( $column, $position, $rule ) = ( uc $1, uc _clean($2), $3 );
             $rule =~ s/,$//;
-			$rule =~ s/\s+$//;
+            $rule =~ s/^\s+|\s+$//g;
             $rule =~ s/#/,/g;
+            $rule =~ s/^["'](.+)["']$/$1/g;
             $struct->{$column} = {
                 position => $position,
                 rule     => $rule
             };
         }
-        else { die "unable to filter\n{$item}" }
+        elsif ( $item =~ /([\w\d_]+)\s+(\w+)\s+([^\s]+)/i ) {
+            my ( $column, $rule1, $rule2 ) = ( uc $1, uc $2, uc $3 );
+            $rule2 =~ s/,$//;
+            $rule2 =~ s/^\s+|\s+$//g;
+            $rule2 =~ s/#/,/g;
+            $rule2 =~ s/^["'](.+)["']$/$1/g;
+            $struct->{$column} = {
+                position => 'NULL',
+                rule     => "$rule1 $rule2"
+            };
+
+        }
+        elsif ( $item =~ /([\w\d_]+)\s+(["\(\)\w:\d]+)/i ) {
+            my ( $column, $rule ) = ( uc $1, $2 );
+            $rule =~ s/,$//;
+            $rule =~ s/^\s+|\s+$//g;
+            $rule =~ s/#/,/g;
+            $rule =~ s/^["'](.+)["']$/$1/g;
+            $struct->{$column} = {
+                position => 'NULL',
+                rule     => $rule
+            };
+        }
+        elsif ( $item =~ /([\w\d_]+)/ ) {
+            $struct->{ uc $1 } = {
+                position => 'NULL',
+                rule     => 'NULL'
+            };
+        }
+        else {
+            die "{$columns}\n\n\n{$item}";
+        }
     }
     return $struct;
 }
@@ -65,9 +127,8 @@ sub clean_columns {
         for ( my $i = 0 ; $i <= $#chars ; $i++ ) {
             if ( $chars[$i] eq $delimit->[0] ) {
                 $match++;
-                next;
             }
-            if ( $match == 1 ) {
+            if ( $match >= 1 ) {
                 $chars[$i] = '#' if ord $chars[$i] == 44;
             }
             $match-- if $chars[$i] eq $delimit->[1];
